@@ -359,6 +359,102 @@
     margin: 0 auto;
   }
 
+  /* LOGIN SCREEN */
+  .login-screen {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--bc-bg);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .login-screen.hidden { display: none; }
+  .login-box {
+    background: var(--bc-card);
+    border: 1px solid var(--bc-border);
+    border-radius: 16px;
+    padding: 40px 36px;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+  }
+  .login-logo {
+    width: 60px;
+    height: 60px;
+    background: var(--bc-gold);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--bc-black);
+    margin: 0 auto 16px;
+  }
+  .login-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 4px;
+  }
+  .login-sub {
+    font-size: 13px;
+    color: var(--bc-muted);
+    margin-bottom: 28px;
+  }
+  .login-input {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 16px;
+    border: 1px solid var(--bc-border);
+    border-radius: 10px;
+    background: #0d0d0d;
+    color: white;
+    text-align: center;
+    letter-spacing: 2px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-input:focus {
+    border-color: var(--bc-gold);
+  }
+  .login-input.error {
+    border-color: var(--bc-red);
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+  }
+  .login-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    border: none;
+    border-radius: 10px;
+    background: var(--bc-gold);
+    color: var(--bc-black);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .login-btn:hover {
+    background: var(--bc-gold-light);
+    transform: translateY(-1px);
+  }
+  .login-error-msg {
+    font-size: 12px;
+    color: var(--bc-red);
+    margin-top: 12px;
+    min-height: 18px;
+  }
+  .app-content.locked { display: none; }
+
   /* RESPONSIVE */
   @media (max-width: 700px) {
     .header { padding: 20px; }
@@ -371,6 +467,23 @@
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">BC</div>
+    <div class="login-title">BlackChicken App Hub</div>
+    <div class="login-sub">Ingresa la clave de acceso</div>
+    <form onsubmit="return checkAccess()">
+      <input type="password" class="login-input" id="pinInput" placeholder="Clave de acceso" autocomplete="off" autofocus>
+      <button type="submit" class="login-btn">Entrar</button>
+    </form>
+    <div class="login-error-msg" id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP CONTENT -->
+<div class="app-content locked" id="appContent">
 
 <div class="header">
   <div class="header-inner">
@@ -689,7 +802,42 @@
   BlackChicken App Hub · Actualizado 12 marzo 2026 · 7 apps + 13 skills IA
 </div>
 
+</div><!-- end app-content -->
+
 <script>
+  // Access control
+  var _h = 'e7de12de198d6f0db07dc1a99add4ae3f87388d78bde03aa35b5e2c5329d9dda';
+  async function hashPass(p) {
+    var enc = new TextEncoder().encode(p);
+    var buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  async function checkAccess() {
+    var pin = document.getElementById('pinInput').value;
+    var h = await hashPass(pin);
+    if (h === _h) {
+      sessionStorage.setItem('bc_auth', '1');
+      unlockApp();
+    } else {
+      var inp = document.getElementById('pinInput');
+      inp.classList.add('error');
+      document.getElementById('loginError').textContent = 'Clave incorrecta';
+      setTimeout(function() { inp.classList.remove('error'); }, 500);
+      inp.value = '';
+      inp.focus();
+    }
+    return false;
+  }
+  function unlockApp() {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('appContent').classList.remove('locked');
+  }
+  // Check session on load
+  if (sessionStorage.getItem('bc_auth') === '1') {
+    unlockApp();
+  }
+
+  // View toggle
   function setView(view) {
     document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
