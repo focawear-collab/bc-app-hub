@@ -853,7 +853,8 @@
 
 <script>
   // Access control
-  var _h = 'ecf02f2c3f1b4e7de0420a9587c8775a95d28df0de4f3be0c123dd5c22c28679';
+  var _hCeo = 'ecf02f2c3f1b4e7de0420a9587c8775a95d28df0de4f3be0c123dd5c22c28679';
+  var _hTeam = '21f66600aac2d98dffbe790cb8ef884a1bb95ef480b59b19fae5ad655e0daf38';
   async function hashPass(p) {
     var enc = new TextEncoder().encode(p);
     var buf = await crypto.subtle.digest('SHA-256', enc);
@@ -862,9 +863,12 @@
   async function checkAccess() {
     var pin = document.getElementById('pinInput').value;
     var h = await hashPass(pin);
-    if (h === _h) {
-      sessionStorage.setItem('bc_auth', '1');
-      unlockApp();
+    if (h === _hCeo) {
+      sessionStorage.setItem('bc_auth', 'ceo');
+      unlockApp('ceo');
+    } else if (h === _hTeam) {
+      sessionStorage.setItem('bc_auth', 'team');
+      unlockApp('team');
     } else {
       var inp = document.getElementById('pinInput');
       inp.classList.add('error');
@@ -875,13 +879,25 @@
     }
     return false;
   }
-  function unlockApp() {
+  function unlockApp(role) {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('appContent').classList.remove('locked');
+    if (role === 'team') {
+      document.body.classList.add('view-team');
+      // Hide view toggle for team users
+      var toggle = document.querySelector('.view-toggle');
+      if (toggle) toggle.style.display = 'none';
+    }
   }
   // Check session on load
-  if (sessionStorage.getItem('bc_auth') === '1') {
-    unlockApp();
+  var _savedAuth = sessionStorage.getItem('bc_auth');
+  if (_savedAuth === 'ceo' || _savedAuth === 'team') {
+    unlockApp(_savedAuth);
+  }
+  // Legacy support
+  if (_savedAuth === '1') {
+    sessionStorage.setItem('bc_auth', 'ceo');
+    unlockApp('ceo');
   }
 
   // View toggle
